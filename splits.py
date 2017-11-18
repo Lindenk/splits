@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+# File layout is saved as such:
+# {
+#   "required_peices": <int>,
+#   "chunks": [{
+#     "group": <int>,
+#     "chunk": <int>,
+#     "phrase": <str>,
+#     "data": <bytes>
+#   }]
+# }
+
 import argparse, sys, random, string, math, pickle
 from simplecrypt import encrypt, decrypt
 from collections import deque
@@ -43,7 +54,7 @@ def parse_args(args):
   # Merge
   merge_parser.add_argument("files",
     help="Files to merge",
-    type=argparse.FileType('r'),
+    type=argparse.FileType('rb'),
     nargs="+")
   merge_parser.add_argument("-o", "--output",
     help="File name to output as",
@@ -85,7 +96,10 @@ def distribute_peices(groups):
 
 def split_file(name, data, num_peices, req_peices):
   # generate n groups with r peices each
-  groups = [{**split_into_group(data, req_peices), "group": i} for i in range(num_peices)]  
+  groups = [[
+    {**g, "group": i} 
+    for g in split_into_group(data, req_peices)] 
+      for i in range(num_peices)]
   
   #distribute peices into files
   distributed_peices = distribute_peices(groups)
@@ -133,11 +147,11 @@ def merge_file(files, output):
         groups[group] = {}
       groups[group][c["chunk"]] = c
 
-  full_groups = filter(
+  full_groups = list(filter(
     lambda chunks: len(chunks) == required_chunks, 
-    [chunks for chunks in groups.values()])
+    [chunks for chunks in groups.values()]))
 
-  if full_groups > 0:
+  if len(full_groups) > 0:
     print("Found a full group")
     output.write(merge(full_groups[0]))
 
