@@ -11,7 +11,7 @@
 #   }]
 # }
 
-import argparse, sys, random, string, math, pickle
+import argparse, sys, random, string, math, pickle, gzip
 from simplecrypt import encrypt, decrypt
 from multiprocessing import Pool
 from itertools import combinations
@@ -115,9 +115,9 @@ def split_file(name, data, num_peices, req_peices):
   files = reduce(flatten_to_files, file_data, {})
 
   # Save each peice
-  print("Saving files...")
+  print("Compresssing and saving files...")
   for (i, p) in enumerate(files.values()):
-    with open(name + "." + str(i), "wb") as f:
+    with gzip.open(name + "." + str(i), "wb") as f:
       f.write(pickle.dumps({
         "required_peices": req_peices,
         "chunks": p
@@ -141,7 +141,7 @@ def merge(chunks):
 # Merge command entry point
 def merge_file(files, output):
   try:
-    data = [pickle.loads(f.read()) for f in files]
+    data = [pickle.loads(gzip.decompress(f.read())) for f in files]
   except Exception as e:
     print("Failed to load files: %s" % e)
     sys.exit(1)
@@ -174,6 +174,8 @@ def merge_file(files, output):
     print("No full groups found! Aborting...")
     sys.exit(1)
 
+
+### Entry point ###
 def main():
   settings = parse_args(sys.argv[1:])
 
